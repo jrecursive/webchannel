@@ -1,11 +1,13 @@
 package webchannel;
 
-import org.json.simple.JSONObject;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.concurrent.*;
+
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
 
 import org.java_websocket.WebSocket;
 import org.java_websocket.WebSocketImpl;
@@ -34,6 +36,7 @@ public class WebChannel extends WebSocketServer {
 
     private ConcurrentHashMap<WebSocket, WebChannelClient> clients =
         new ConcurrentHashMap<WebSocket, WebChannelClient>();
+    JSONParser jsonParser = new JSONParser();
     
 	public static void main(String args[]) throws Exception {
 		System.out.println("webchannel");
@@ -73,26 +76,77 @@ public class WebChannel extends WebSocketServer {
 	
 	@Override
 	public void onOpen(WebSocket conn, ClientHandshake handshake) {
-	   System.out.println("websocket: opened connection");
+	    System.out.println("websocket: opened connection");
 	}
 
 	@Override
 	public void onClose(WebSocket conn, int code, String reason, boolean remote) {
-	   System.out.println("websocket: closed connection");
+	    clients.get(conn).disconnect();
+	    clients.remove(conn);
+	    System.out.println("websocket: closed connection: " + 
+	        code + ": " + 
+	        reason + ": " + 
+	        remote);
 	}
 
 	@Override
 	public void onError(WebSocket conn, Exception ex) {
-	   System.out.println("websocket: error: ");
-	   ex.printStackTrace();
+	    System.out.println("websocket: error: ");
+	    ex.printStackTrace();
 	}
 
 	@Override
 	public void onMessage(WebSocket conn, String message) {
-	   System.out.println("onMessage: " + conn + ": " + message);
-	   conn.send(message);
+	    try {
+    	    System.out.println("onMessage: " + conn + ": " + message);
+    	    WebChannelClient client = clients.get(conn);
+    	    
+            /*
+            * if unset client, it's the first message; assume
+            *  space-separated list of channel patterns
+            */
+            if (client == null) {
+                System.out.println("establishing client: " + conn + ": " + message);
+                String[] patterns = message.split(" ");
+                client = new WebChannelClient(conn, patterns);
+                clients.put(conn, client);
+                conn.send(buildOk());
+               
+            /*
+            * interpret request
+            */
+            } else {
+                JSONObject msg = (JSONObject) jsonParser.parse(message);
+                System.out.println(msg.toString());
+                
+                if (((String)msg.get("op")).equals("publish")) {
+                    String ch = (String) msg.get("channel");
+                    String data = (String) msg.get("message");
+                    client.publish(ch, data);
+                    System.out.println(conn + ": published: " + ch + ": " + data);
+                    
+                } else if (((String)msg.get("op")).equals("subscribe")) {
+                    String ch = (String) msg.get("channel");
+                    client.psubscribe(ch);
+                    System.out.println(conn + ": subscribed: " + ch + ": " + msg);
+                        
+                } else if (((String)msg.get("op")).equals("unsubscribe")) {
+                    String ch = (String) msg.get("channel");
+                    client.punsubscribe(ch);
+                    System.out.println(conn + ": unsubscribed: " + ch + ": " + msg);
+                        
+                } else {
+                    
+                    System.out.println(conn + ": unknown command? " + msg);
+                }
+            }
+            
+            //conn.send(message);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
 	}
-
+	
 	@Override
 	public void onMessage(WebSocket conn, ByteBuffer blob) {
 	   System.out.println("onMessage: " + conn + ": " + blob);
@@ -105,4 +159,14 @@ public class WebChannel extends WebSocketServer {
 	   builder.setTransferemasked(false);
 	   conn.sendFrame(frame);
 	}
+	
+	/*
+	 * helpers
+    */
+    
+    private String buildOk() {
+        JSONObject obj = new JSONObject();
+        obj.put("result","ok");
+        return obj.toString();
+    }
 }
