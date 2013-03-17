@@ -5,6 +5,7 @@ import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.Collections;
+import java.util.concurrent.*;
 
 import org.java_websocket.WebSocket;
 import org.java_websocket.WebSocketImpl;
@@ -15,7 +16,24 @@ import org.java_websocket.framing.Framedata;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
 
+import redis.clients.jedis.BinaryJedisPubSub;
+import redis.clients.jedis.Jedis;
+import redis.clients.jedis.JedisPubSub;
+import redis.clients.jedis.exceptions.JedisConnectionException;
+import redis.clients.jedis.exceptions.JedisDataException;
+import redis.clients.util.SafeEncoder;
+
+import redis.clients.jedis.BinaryJedisPubSub;
+import redis.clients.jedis.Jedis;
+import redis.clients.jedis.JedisPubSub;
+import redis.clients.jedis.exceptions.JedisConnectionException;
+import redis.clients.jedis.exceptions.JedisDataException;
+import redis.clients.util.SafeEncoder;
+
 public class WebChannel extends WebSocketServer {
+
+    private ConcurrentHashMap<WebSocket, WebChannelClient> clients =
+        new ConcurrentHashMap<WebSocket, WebChannelClient>();
     
 	public static void main(String args[]) throws Exception {
 		System.out.println("webchannel");
