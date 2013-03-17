@@ -54,7 +54,7 @@ public class WebChannelClient {
     
     final JedisPubSub pubsub = new JedisPubSub() {
         public void onMessage(String channel, String message) {
-            conn.send(buildMsg(channel, message));
+            send(buildMsg(channel, message));
             System.out.println("pubsub: onMessage: " + channel + ": " + message);
         }
     
@@ -72,7 +72,7 @@ public class WebChannelClient {
     
         public void onPMessage(String pattern, String channel,
                 String message) {
-            conn.send(buildMsg(channel, message));
+            send(buildMsg(channel, message));
             System.out.println("pubsub: onPMessage: " + 
                 pattern + ": " + 
                 channel + ": " + message);
@@ -113,6 +113,17 @@ public class WebChannelClient {
         obj.put("channel", channel);
         obj.put("message", message);
         return obj.toString();
+    }
+    
+    private void send(String message) {
+        try {
+            synchronized(conn) {
+                if (conn.isFlushAndClose()) return;
+                conn.send(message);
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
     }
 
 }

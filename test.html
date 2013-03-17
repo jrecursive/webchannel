@@ -63,7 +63,7 @@
         <script src="http://jquery-json.googlecode.com/files/jquery.json-2.2.min.js"></script>
         <script src="jquery.websockets.js"></script>
         <script>        
-            var ws = $.websocket("ws://127.0.0.1:9003/", {
+            var ws = $.websocket("ws://127.0.0.1:9004/", {
                 open: function() {
                     ws.send('message', { op: "subscribe", channel: "grid-*" });
                     setTimeout("pulse();", 1000);

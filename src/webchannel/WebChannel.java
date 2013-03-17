@@ -52,7 +52,6 @@ public class WebChannel extends WebSocketServer {
 
     private ConcurrentHashMap<WebSocket, WebChannelClient> clients =
         new ConcurrentHashMap<WebSocket, WebChannelClient>();
-    JSONParser jsonParser = new JSONParser();
     
 	public static void main(String args[]) throws Exception {
 		System.out.println("webchannel");
@@ -63,8 +62,8 @@ public class WebChannel extends WebSocketServer {
         try {
             port = new Integer( args[ 0 ] );
         } catch ( Exception e ) {
-            System.out.println( "No port specified. Defaulting to 9003" );
-            port = 9003;
+            System.out.println( "No port specified. Defaulting to 9004" );
+            port = 9004;
         }
         
         System.out.println("starting websocket server");
@@ -107,6 +106,7 @@ public class WebChannel extends WebSocketServer {
     	    System.out.println("onMessage: " + conn + ": " + message);
     	    WebChannelClient client = clients.get(conn);
     	    
+    	    JSONParser jsonParser = new JSONParser();
             JSONObject msg = (JSONObject) jsonParser.parse(message);
             System.out.println(msg.toString());
             
@@ -135,10 +135,11 @@ public class WebChannel extends WebSocketServer {
         }
 	}
 	
+	/*
 	@Override
 	public void onMessage(WebSocket conn, ByteBuffer blob) {
 	   System.out.println("onMessage: " + conn + ": " + blob);
-	   conn.send(blob);
+	   //conn.send(blob);
 	}
 
 	@Override
@@ -147,6 +148,7 @@ public class WebChannel extends WebSocketServer {
 	   builder.setTransferemasked(false);
 	   conn.sendFrame(frame);
 	}
+	*/
 	
 	/*
 	 * helpers
