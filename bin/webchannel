@@ -1,0 +1,2 @@
+java -XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:CMSInitiatingOccupancyFraction=70 -d64 -server -Djava.library.path=/usr/local/lib -Xmx512M -cp .:./build:lib/* webchannel.WebChannel $*
+
