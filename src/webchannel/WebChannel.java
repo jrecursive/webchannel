@@ -140,8 +140,6 @@ public class WebChannel extends WebSocketServer {
                     System.out.println(conn + ": unknown command? " + msg);
                 }
             }
-            
-            //conn.send(message);
         } catch (Exception ex) {
             ex.printStackTrace();
         }
