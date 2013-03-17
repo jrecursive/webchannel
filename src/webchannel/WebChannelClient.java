@@ -26,7 +26,11 @@ public class WebChannelClient {
         
         Thread t = new Thread(new Runnable() {
             public void run() {
-                sub.psubscribe(pubsub, patterns);
+                try {
+                    sub.psubscribe(pubsub, patterns);
+                } catch (redis.clients.jedis.exceptions.JedisConnectionException jce) {
+                    // go sweetly
+                }
             }
         });
         t.start();

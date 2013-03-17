@@ -40,19 +40,7 @@ public class WebChannel extends WebSocketServer {
     
 	public static void main(String args[]) throws Exception {
 		System.out.println("webchannel");
-		
-		// json object
-		
-        JSONObject obj=new JSONObject();
-        obj.put("name","foo");
-        obj.put("num",new Integer(100));
-        obj.put("balance",new Double(1000.21));
-        obj.put("is_vip",new Boolean(true));
-        obj.put("nickname",null);
-        System.out.println(obj);
-        
-        // websocket server
-        
+
         WebSocketImpl.DEBUG = false;
         int port;
         
@@ -76,6 +64,8 @@ public class WebChannel extends WebSocketServer {
 	
 	@Override
 	public void onOpen(WebSocket conn, ClientHandshake handshake) {
+        WebChannelClient client = new WebChannelClient(conn, new String[] { "" });
+        clients.put(conn, client);
 	    System.out.println("websocket: opened connection");
 	}
 
@@ -101,44 +91,28 @@ public class WebChannel extends WebSocketServer {
     	    System.out.println("onMessage: " + conn + ": " + message);
     	    WebChannelClient client = clients.get(conn);
     	    
-            /*
-            * if unset client, it's the first message; assume
-            *  space-separated list of channel patterns
-            */
-            if (client == null) {
-                System.out.println("establishing client: " + conn + ": " + message);
-                String[] patterns = message.split(" ");
-                client = new WebChannelClient(conn, patterns);
-                clients.put(conn, client);
-                conn.send(buildOk());
-               
-            /*
-            * interpret request
-            */
-            } else {
-                JSONObject msg = (JSONObject) jsonParser.parse(message);
-                System.out.println(msg.toString());
+            JSONObject msg = (JSONObject) jsonParser.parse(message);
+            System.out.println(msg.toString());
+            
+            if (((String)msg.get("op")).equals("publish")) {
+                String ch = (String) msg.get("channel");
+                String data = (String) msg.get("message");
+                client.publish(ch, data);
+                System.out.println(conn + ": published: " + ch + ": " + data);
                 
-                if (((String)msg.get("op")).equals("publish")) {
-                    String ch = (String) msg.get("channel");
-                    String data = (String) msg.get("message");
-                    client.publish(ch, data);
-                    System.out.println(conn + ": published: " + ch + ": " + data);
+            } else if (((String)msg.get("op")).equals("subscribe")) {
+                String ch = (String) msg.get("channel");
+                client.psubscribe(ch);
+                System.out.println(conn + ": subscribed: " + ch + ": " + msg);
                     
-                } else if (((String)msg.get("op")).equals("subscribe")) {
-                    String ch = (String) msg.get("channel");
-                    client.psubscribe(ch);
-                    System.out.println(conn + ": subscribed: " + ch + ": " + msg);
-                        
-                } else if (((String)msg.get("op")).equals("unsubscribe")) {
-                    String ch = (String) msg.get("channel");
-                    client.punsubscribe(ch);
-                    System.out.println(conn + ": unsubscribed: " + ch + ": " + msg);
-                        
-                } else {
+            } else if (((String)msg.get("op")).equals("unsubscribe")) {
+                String ch = (String) msg.get("channel");
+                client.punsubscribe(ch);
+                System.out.println(conn + ": unsubscribed: " + ch + ": " + msg);
                     
-                    System.out.println(conn + ": unknown command? " + msg);
-                }
+            } else {
+                
+                System.out.println(conn + ": unknown command? " + msg);
             }
         } catch (Exception ex) {
             ex.printStackTrace();
